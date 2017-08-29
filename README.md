@@ -6,6 +6,7 @@ Dependencies are:
 -pyvisa 
 -pyqt5
 -numpy
+-pyqtgraph
 
 MIT License
 
