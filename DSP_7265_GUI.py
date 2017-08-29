@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sun Mar 26 14:41:07 2017
-Last edited on Mon Apr 17 2017
+Last edited on Thursday July 13 2017
 @author: JT
 Made using help from PyQt5 tutorials by ZetCode.com
 """
@@ -9,12 +9,14 @@ Made using help from PyQt5 tutorials by ZetCode.com
 import visa
 import sys
 import numpy as np
+
 import time
 from PyQt5.QtWidgets import (QWidget, QLabel,QCheckBox, QApplication,QComboBox
-                             ,QHBoxLayout, QPushButton,QFrame, QSplitter, 
-                             QStyleFactory,QInputDialog,QLineEdit,QFormLayout)
-from PyQt5.QtCore import Qt
-from SweepCode import sr_sweep
+                             ,QPushButton,QLineEdit)
+
+                                                
+from SweepCode_Thread import sr_sweep
+#from FakeSweep import fake_sweep
 rm = visa.ResourceManager()
 rm.list_resources()
 dsp7265 = rm.open_resource("GPIB::12::INSTR")
@@ -225,6 +227,17 @@ class main(QWidget):
         tcsync.move(550, 125)
         tcsync.currentIndexChanged.connect(self.tcsyncSET)
         
+        #Dropdown box for plot Y
+        self.yplotlbl = QLabel("Y-Axis Plot", self)
+        self.yplotlbl.move(550, 175)
+        self.yplot = QComboBox(self)
+        self.yplot.addItem("X Output")
+        self.yplot.addItem("Magnitude Output")
+        self.yplot.addItem("Phase")
+        self.yplot.addItem("ADC 1")
+        self.yplot.addItem("ADC 2")
+        self.yplot.move(550, 190)
+        self.yplot.currentIndexChanged.connect(self.ypt)   
         
                         #Dropdown box for what to measure
                 
@@ -235,7 +248,8 @@ class main(QWidget):
         self.sweepvar.addItem("Bias Voltage(microvolts)")
         self.sweepvar.addItem("Frequency(mHz)")
         self.sweepvar.addItem("DAC 1 (mV)")
-        self.sweepvar.addItem("DAC 2 (mV)")          
+        self.sweepvar.addItem("DAC 2 (mV)")
+        self.sweepvar.addItem("Time (s)")            
         self.sweepvar.move(370, 165)
         self.sweepvar.currentIndexChanged.connect(self.sweepvarSET)
         
@@ -287,6 +301,8 @@ class main(QWidget):
         self.setRefVF.move(700, 110)
         self.setRefVF.clicked[bool].connect(self.setRefVFON)
         
+        
+        
 #        # Text Box for manually setting the reference phase 
 #        self.minlbl = QLabel("Reference Frequency", self)
 #        self.minlbl.move(700, 75)
@@ -299,7 +315,9 @@ class main(QWidget):
         self.autophase.move(700, 150)
         self.autophase.clicked[bool].connect(self.autophaseON)
         
-        
+
+
+         
         
 
         
@@ -389,9 +407,11 @@ class main(QWidget):
         self.setWindowTitle('QCheckBox')
         self.show()
     
+    
+            
     #Definition for lock-in mode list
     def onActivated(self,i):
-       self.lbl.setText(str(i))
+#       self.lbl.setText(str(i))
        if (i==0):
            dsp7265.write('IMODE0;VMODE1')
        elif (i==1):  
@@ -423,7 +443,7 @@ class main(QWidget):
     #Definitions for setting line frequency rejection filter
     def lfSET(self,i):
 #       self.lflbl.setText(str(self.lf.currentIndex()))
-#       self.lfrflbl.setText('LF '+str(self.lfrf.currentIndex())+" "+str(self.lf.currentIndex()))       
+       self.lfrflbl.setText('LF '+str(self.lfrf.currentIndex())+" "+str(self.lf.currentIndex()))       
        dsp7265.write('LF '+str(self.lfrf.currentIndex())+" "+str(self.lf.currentIndex()))
        
     def lfrfSET(self,i):
@@ -471,27 +491,41 @@ class main(QWidget):
            measure_value = ''
            sweep_value = ''
            dtbt_cols = 0
+           y_plot_var = 0
            if self.cb.isChecked():
                measure_value = measure_value + 'X'
                dtbt_cols=dtbt_cols+1
+               if self.yplot.currentIndex() == 0:
+                   y_plot_var = dtbt_cols
            if self.cb2.isChecked():
                measure_value = measure_value + ';Y'
                dtbt_cols=dtbt_cols+1
            if self.cb3.isChecked():
                measure_value = measure_value + ';MAG'
                dtbt_cols=dtbt_cols+1
+               if self.yplot.currentIndex() == 1:
+                   y_plot_var = dtbt_cols
            if self.cb4.isChecked():
                measure_value = measure_value + ';PHA'
                dtbt_cols=dtbt_cols+1
+               if self.yplot.currentIndex() == 2:
+                   y_plot_var = dtbt_cols
+                   
            if self.cb5.isChecked():
                measure_value = measure_value + ';SEN'
                dtbt_cols=dtbt_cols+1
+               
            if self.cb6.isChecked():
                measure_value = measure_value + ';ADC1'
-               dtbt_cols=dtbt_cols+1
+               dtbt_cols=dtbt_cols+1               
+               if self.yplot.currentIndex() == 3:
+                   y_plot_var = dtbt_cols  
+                   
            if self.cb7.isChecked():
                measure_value = measure_value + ';ADC2'
                dtbt_cols=dtbt_cols+1
+               if self.yplot.currentIndex() == 4:
+                   y_plot_var = dtbt_cols               
            if self.cb8.isChecked():
                measure_value = measure_value + ';ADC3'
                dtbt_cols=dtbt_cols+1
@@ -517,20 +551,32 @@ class main(QWidget):
                measure_value = measure_value + ';FRQ'
                dtbt_cols=dtbt_cols+1
            print(measure_value)
+           
            #What you want to sweep
            if self.sweepvar.currentIndex() == 0:
                sweep_value = 'OA '
+               x_var = 0
            elif self.sweepvar.currentIndex() == 1:
                sweep_value = 'OF '
+               x_var = 1
            elif self.sweepvar.currentIndex() == 2:
-              sweep_value = 'DAC1 ' 
-           else:
+              sweep_value = 'DAC1 '
+              x_var = 2
+           elif self.sweepvar.currentIndex() == 3:
                sweep_value = 'DAC2 '
+               x_var = 3
+           else:
+               sweep_value = 'TIME '
+               x_var = 4
            print(sweep_value)
+           print(x_var)
            data = sr_sweep(int(self.max_val.text()),int(self.min_val.text()),
-                           int(self.points.text()),sweep_value,measure_value,dtbt_cols)
+                           int(self.points.text()),sweep_value,measure_value,dtbt_cols,x_var,y_plot_var)
            #data = np.zeros((4,16))
            np.savetxt(self.fname.text(), data, delimiter=",")
+
+#           dats = fake_sweep(int(self.points.text()))
+           
            self.sweep.setChecked(False)
            
     #The check box definitions, on(1) means measure, off(0) means ignore  
@@ -546,7 +592,8 @@ class main(QWidget):
 #       self.tcsynclbl.setText('SYNC'+str(i))
        dsp7265.write('SYNC'+str(i))
 
-
+    def ypt(self,i):   
+        self.yplotlbl.setText('ypt'+str(i))
     #Reference channel settings
     def setRefVFON(self,pressed):
        if pressed:
@@ -560,8 +607,8 @@ class main(QWidget):
            dsp7265.write('AQN')
            time.sleep(20)
            self.automeas.setChecked(False)
-            
 
+    
 if __name__ == '__main__':
     
     app = QApplication(sys.argv)
