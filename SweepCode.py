@@ -19,7 +19,7 @@ import pyqtgraph as pg;
 global curve, ptr
 
 #data taking subroutine
-def take_data(y,z,ampl,sw_item,dbt,cols,dat_array,a,b,var):
+def take_data(y,z,ampl,sw_item,dbt,cols,dat_array,a,b,var,sensmod):
     dsp7265.write(sw_item+str(ampl))
     time.sleep(0.1)            
     mag = dsp7265.query(dbt)
@@ -31,11 +31,11 @@ def take_data(y,z,ampl,sw_item,dbt,cols,dat_array,a,b,var):
     for x in range(1,cols-1):
         dat_array[z][x] = int(data[x-1])      
     a[z] = ampl
-    b[z] = dat_array[z][var]  
+    b[z] = dat_array[z][var]*sensmod  
     time.sleep(0.002)            
     return dat_array,a,b;
 
-def take_data_time(y,z,d_step,dbt,cols,dat_array,a,b,var):            
+def take_data_time(y,z,d_step,dbt,cols,dat_array,a,b,var,sensmod):            
 
     time.sleep(d_step)
     mag = dsp7265.query(dbt)
@@ -45,7 +45,7 @@ def take_data_time(y,z,d_step,dbt,cols,dat_array,a,b,var):
     for x in range(1,cols-1):
         dat_array[z][x] = int(data[x-1])      
     a[z] = dat_array[z][0]
-    b[z] = dat_array[z][var]  
+    b[z] = dat_array[z][var]*sensmod  
     time.sleep(0.002)            
     return dat_array,a,b; 
 
@@ -67,10 +67,10 @@ def plotter(a,b,sweepplot):
 
 #Pre factor on voltage data is from
 
-def sr_sweep(sweep_max,sweep_min,steps,sweep_item,dtbt,dtbt_num,xvar,yvar):
+def sr_sweep(sweep_max,sweep_min,steps,sweep_item,dtbt,dtbt_num,xvar,yvar,sensmod):
 
     dsp7265.write(sweep_item+str(sweep_min))
-    d_sweep = abs(sweep_max-sweep_min)//steps
+    d_sweep = abs(sweep_max-sweep_min)/steps
     if xvar<4:
         total_steps = steps*2+1 
     else:
@@ -95,7 +95,7 @@ def sr_sweep(sweep_max,sweep_min,steps,sweep_item,dtbt,dtbt_num,xvar,yvar):
     #Do sweep
     if xvar<4:
         while (i<steps):
-            t1 = threading.Thread(target = take_data,args=(i,j,amp,sweep_item,dtbt,cols,data_array,x,y,yvar))
+            t1 = threading.Thread(target = take_data,args=(i,j,amp,sweep_item,dtbt,cols,data_array,x,y,yvar,sensmod))
             
             t2 = threading.Thread(target = plotter,args=(x[0:j],y[0:j],sweepplot))
             
@@ -114,7 +114,7 @@ def sr_sweep(sweep_max,sweep_min,steps,sweep_item,dtbt,dtbt_num,xvar,yvar):
             
         pg.QtGui.QApplication.processEvents()
         while (i>=0):        
-            t1 = threading.Thread(target = take_data,args=(i,j,amp,sweep_item,dtbt,cols,data_array,x,y,yvar))
+            t1 = threading.Thread(target = take_data,args=(i,j,amp,sweep_item,dtbt,cols,data_array,x,y,yvar,sensmod))
             t2 = threading.Thread(target = plotter,args=(x[0:j],y[0:j],sweepplot))
             
             t1.start()
@@ -133,7 +133,7 @@ def sr_sweep(sweep_max,sweep_min,steps,sweep_item,dtbt,dtbt_num,xvar,yvar):
     #This loop is for time measurements
     else:
         while (j<steps):
-            t1 = threading.Thread(target = take_data_time,args=(j,j,d_sweep,dtbt,cols,data_array,x,y,yvar))
+            t1 = threading.Thread(target = take_data_time,args=(j,j,d_sweep,dtbt,cols,data_array,x,y,yvar,sensmod))
 
             t2 = threading.Thread(target = plotter,args=(x[0:j],y[0:j],sweepplot))
 

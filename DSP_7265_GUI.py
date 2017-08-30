@@ -9,19 +9,27 @@ Made using help from PyQt5 tutorials by ZetCode.com
 import visa
 import sys
 import numpy as np
+import threading 
 
 import time
 from PyQt5.QtWidgets import (QWidget, QLabel,QCheckBox, QApplication,QComboBox
                              ,QPushButton,QLineEdit)
 
                                                 
-from SweepCode_Thread import sr_sweep
+from SweepCode import sr_sweep
 #from FakeSweep import fake_sweep
 rm = visa.ResourceManager()
 rm.list_resources()
 dsp7265 = rm.open_resource("GPIB::12::INSTR")
 
-
+#Defintions for writing values to the lock in from the main panel and for exiting
+def exiter():
+    dsp7265.write('DAC 2 0;DAC 1 0;OA 0')    
+def write_rvf(a,b):
+    dsp7265.write('OA '+a+';OF '+b)
+def write_dac(a,b):
+    dsp7265.write('DAC '+a+' '+b)
+     
 #Sets the second variable for line frequency automattically for 50Hz
 
 class main(QWidget):
@@ -39,15 +47,15 @@ class main(QWidget):
         #Dropdown box for lock-in mode 
         self.lbl = QLabel("Input Mode", self)
         self.lbl.move(140, 10)
-        inputMODE = QComboBox(self)
-        inputMODE.addItem("A(Single-Ended Voltage")
-        inputMODE.addItem("-B(Inverting Single Ended Voltage)")
-        inputMODE.addItem("A-B (Differential Voltage)")
-        inputMODE.addItem("B Current input - High")
-        inputMODE.addItem("B Current input - Low Noise")
-        inputMODE.addItem("Inputs Grounded (test)")
-        inputMODE.move(140, 25)        
-        inputMODE.currentIndexChanged.connect(self.onActivated)
+        self.inputMODE = QComboBox(self)
+        self.inputMODE.addItem("A(Single-Ended Voltage")
+        self.inputMODE.addItem("-B(Inverting Single Ended Voltage)")
+        self.inputMODE.addItem("A-B (Differential Voltage)")
+        self.inputMODE.addItem("B Current input - High")
+        self.inputMODE.addItem("B Current input - Low Noise")
+        self.inputMODE.addItem("Inputs Grounded (test)")
+        self.inputMODE.move(140, 25)        
+        self.inputMODE.currentIndexChanged.connect(self.onActivated)
         
         #Dropdown box for connector shells  
         self.shelllbl = QLabel("Input Connector Shells", self)
@@ -301,14 +309,6 @@ class main(QWidget):
         self.setRefVF.move(700, 110)
         self.setRefVF.clicked[bool].connect(self.setRefVFON)
         
-        
-        
-#        # Text Box for manually setting the reference phase 
-#        self.minlbl = QLabel("Reference Frequency", self)
-#        self.minlbl.move(700, 75)
-#        self.min_val = QLineEdit(self)
-#        self.min_val.move(700, 90)
-
         #Button activates auto phase
         self.autophase = QPushButton('Auto Phase', self)
         self.autophase.setCheckable(True)
@@ -317,9 +317,36 @@ class main(QWidget):
         
 
 
-         
+        # Text Box for DAC 1
+        self.dac1lbl = QLabel("DAC 1 Voltage (microvolts)", self)
+        self.dac1lbl.move(700, 220)
+        self.dac1_val = QLineEdit(self)
+        self.dac1_val.move(700, 235)
         
 
+        #Button sets DAC 1
+        self.setdac1 = QPushButton('Set DAC 1', self)
+        self.setdac1.setCheckable(True)
+        self.setdac1.move(700, 255)
+        self.setdac1.clicked[bool].connect(self.setdac1ON)
+        
+                # Text Box for DAC 2
+        self.dac2lbl = QLabel("DAC 2 Voltage (microvolts)", self)
+        self.dac2lbl.move(700, 305)
+        self.dac2_val = QLineEdit(self)
+        self.dac2_val.move(700, 320)
+        
+        #Button sets DAC 2
+        self.setdac2 = QPushButton('Set DAC 2', self)
+        self.setdac2.setCheckable(True)
+        self.setdac2.move(700, 345)
+        self.setdac2.clicked[bool].connect(self.setdac2ON)         
+        
+        #Button Exits software sets all outputs to zero
+        self.exitlbl = QPushButton('Exit', self)
+        self.exitlbl.setCheckable(True)
+        self.exitlbl.move(700, 405)
+        self.exitlbl.clicked[bool].connect(self.exit_prog) 
         
         #Button to uncheck all sweep monitor boxes
 #        self.Uncheck = QPushButton('Uncheck All', self)
@@ -560,18 +587,60 @@ class main(QWidget):
                sweep_value = 'OF '
                x_var = 1
            elif self.sweepvar.currentIndex() == 2:
-              sweep_value = 'DAC1 '
+              sweep_value = 'DAC 1 '
               x_var = 2
            elif self.sweepvar.currentIndex() == 3:
-               sweep_value = 'DAC2 '
+               sweep_value = 'DAC 2 '
                x_var = 3
            else:
                sweep_value = 'TIME '
                x_var = 4
            print(sweep_value)
-           print(x_var)
+           
+           #calculate modifiers for sensitivity setting
+           sens_index = self.sensitivity.currentIndex()
+           #first check for multiplier of 2, 5, or 10
+           if((sens_index%3) == 1):
+               modifier_1 = 5
+           elif((sens_index%3) == 2):
+               modifier_1 = 10
+           else:
+               modifier_1 = 2
+
+            # check for the input mode and add appropriate modifier  
+           imode_index =  self.inputMODE.currentIndex()
+           if(imode_index == 3):
+               modifier_2 = 1000000
+           elif(imode_index == 4):
+               modifier_2 = 100000000
+           else:
+               modifier_2 = 1
+               
+           #Check for order of magnitude
+           if(sens_index<3):
+               modifier_3 = 1e-9
+           elif(sens_index<6):
+               modifier_3 = 1e-8
+           elif(sens_index<9):
+               modifier_3 = 1e-7
+           elif(sens_index<12):
+               modifier_3 = 1e-6
+           elif(sens_index<15):
+               modifier_3 = 1e-5
+           elif(sens_index<18):
+               modifier_3 = 1e-4
+           elif(sens_index<21):
+               modifier_3 = 1e-3           
+           elif(sens_index<24):
+               modifier_3 = 1e-2               
+           else:
+               modifier_1 = 1e-1            
+            
+           sens_mod = modifier_3*modifier_1/(10000*modifier_2)
+           
+           #Actually do the sweep
            data = sr_sweep(int(self.max_val.text()),int(self.min_val.text()),
-                           int(self.points.text()),sweep_value,measure_value,dtbt_cols,x_var,y_plot_var)
+                           int(self.points.text()),sweep_value,measure_value,dtbt_cols,x_var,y_plot_var,sens_mod)
            #data = np.zeros((4,16))
            np.savetxt(self.fname.text(), data, delimiter=",")
 
@@ -597,7 +666,10 @@ class main(QWidget):
     #Reference channel settings
     def setRefVFON(self,pressed):
        if pressed:
-           dsp7265.write('OA '+self.refV_val.text()+';OF '+self.refF_val.text())
+           t2 = threading.Thread(target = write_rvf,args=(self.refV_val.text(),self.refF_val.text()))            
+           t2.start()            
+           t2.join()           
+           #dsp7265.write('OA '+self.refV_val.text()+';OF '+self.refF_val.text())
            time.sleep(3)
 #           self.refVlbl.setText(self.refV_val.text())
            self.setRefVF.setChecked(False)  
@@ -608,7 +680,44 @@ class main(QWidget):
            time.sleep(20)
            self.automeas.setChecked(False)
 
-    
+    #DAC 1 set
+    def setdac1ON(self,pressed):
+       if pressed:
+           j="1"
+           t2 = threading.Thread(target = write_rvf,args=(j,self.dac1_val.text()))            
+           t2.start()            
+           t2.join()            
+           dsp7265.write('DAC 1 '+self.dac1_val.text())
+           time.sleep(3)
+#           self.refVlbl.setText(self.refV_val.text())
+           self.setdac1.setChecked(False)
+
+    #DAC 2 set
+    def setdac2ON(self,pressed):
+       if pressed:
+           j="2"
+           t2 = threading.Thread(target = write_rvf,args=(j,self.dac2_val.text()))            
+           t2.start()            
+           t2.join() 
+           dsp7265.write('DAC 2 '+self.dac2_val.text())
+           time.sleep(3)
+#           self.refVlbl.setText(self.refV_val.text())
+           self.setdac2.setChecked(False)
+           
+    #Exit prog
+    def exit_prog(self,pressed):
+       if pressed:
+           
+           t2 = threading.Thread(target = exiter)            
+           t2.start()            
+           t2.join()
+           #dsp7265.write('DAC 2 0;DAC 1 0;OA 0')
+#           time.sleep(3)
+#           self.refVlbl.setText(self.refV_val.text())
+           sys.exit(app.exec_())
+           self.exitlbl.setChecked(False)           
+
+
 if __name__ == '__main__':
     
     app = QApplication(sys.argv)
