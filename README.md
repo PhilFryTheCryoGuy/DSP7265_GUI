@@ -8,6 +8,10 @@ Dependencies are:
 -numpy
 -pyqtgraph
 
+The exported data(X,Y, and MAG) are not scaled, only the plotted data.
+To scale the data you must divide by 10000 and then multiply by the sensitivity used. 
+The reason for this factor is that the data as read from the lock-in is scaled to 10000 where 10000 is the sensitivity level. The lock in will however output values up to 30000 in relation to the 10000(see DSP 7265 manual GPIB command descriptions).
+
 MIT License
 
 Copyright (c) 2017 Jerome Thomas Mlack
