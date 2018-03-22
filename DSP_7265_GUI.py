@@ -29,6 +29,9 @@ def write_rvf(a,b):
     dsp7265.write('OA '+a+';OF '+b)
 def write_dac(a,b):
     dsp7265.write('DAC '+a+' '+b)
+def write_autophase():
+    dsp7265.write('AQN')
+    
      
 #Sets the second variable for line frequency automattically for 50Hz
 
@@ -520,62 +523,62 @@ class main(QWidget):
            dtbt_cols = 0
            y_plot_var = 0
            if self.cb.isChecked():
-               measure_value = measure_value + 'X'
+               measure_value = measure_value + 'X '
                dtbt_cols=dtbt_cols+1
                if self.yplot.currentIndex() == 0:
                    y_plot_var = dtbt_cols
            if self.cb2.isChecked():
-               measure_value = measure_value + ';Y'
+               measure_value = measure_value + ';Y '
                dtbt_cols=dtbt_cols+1
            if self.cb3.isChecked():
-               measure_value = measure_value + ';MAG'
+               measure_value = measure_value + ';MAG '
                dtbt_cols=dtbt_cols+1
                if self.yplot.currentIndex() == 1:
                    y_plot_var = dtbt_cols
            if self.cb4.isChecked():
-               measure_value = measure_value + ';PHA'
+               measure_value = measure_value + ';PHA '
                dtbt_cols=dtbt_cols+1
                if self.yplot.currentIndex() == 2:
                    y_plot_var = dtbt_cols
                    
            if self.cb5.isChecked():
-               measure_value = measure_value + ';SEN'
+               measure_value = measure_value + ';SEN '
                dtbt_cols=dtbt_cols+1
                
            if self.cb6.isChecked():
-               measure_value = measure_value + ';ADC1'
+               measure_value = measure_value + ';ADC1 '
                dtbt_cols=dtbt_cols+1               
                if self.yplot.currentIndex() == 3:
                    y_plot_var = dtbt_cols  
                    
            if self.cb7.isChecked():
-               measure_value = measure_value + ';ADC2'
+               measure_value = measure_value + ';ADC2 '
                dtbt_cols=dtbt_cols+1
                if self.yplot.currentIndex() == 4:
                    y_plot_var = dtbt_cols               
            if self.cb8.isChecked():
-               measure_value = measure_value + ';ADC3'
+               measure_value = measure_value + ';ADC3 '
                dtbt_cols=dtbt_cols+1
            if self.cb9.isChecked():
-               measure_value = measure_value + ';DAC1'
+               measure_value = measure_value + ';DAC1 '
                dtbt_cols=dtbt_cols+1
            if self.cb10.isChecked():
-               measure_value = measure_value + ';DAC2'
+               measure_value = measure_value + ';DAC2 '
                dtbt_cols=dtbt_cols+1
            if self.cb11.isChecked():
-               measure_value = measure_value + ';NN'
+               measure_value = measure_value + ';NN '
                dtbt_cols=dtbt_cols+1
            if self.cb12.isChecked():
-               measure_value = measure_value + ';RT'
+               measure_value = measure_value + ';RT '
                dtbt_cols=dtbt_cols+1
            if self.cb13.isChecked():
-               measure_value = measure_value + ';LR'
+               measure_value = measure_value + ';LR '
                dtbt_cols=dtbt_cols+1
            if self.cb14.isChecked():
-               measure_value = measure_value + ';ENBW'
+               measure_value = measure_value + ';ENBW '
                dtbt_cols=dtbt_cols+1
            if self.cb15.isChecked():
-               measure_value = measure_value + ';FRQ'
+               measure_value = measure_value + ';FRQ '
                dtbt_cols=dtbt_cols+1
            print(measure_value)
            
@@ -676,8 +679,10 @@ class main(QWidget):
            
     def autophaseON(self,pressed):
        if pressed:
-           dsp7265.write('AQN')
-           time.sleep(20)
+           t2 = threading.Thread(target = write_autophase)
+           t2.start()
+           t2.join()
+           time.sleep(10)
            self.automeas.setChecked(False)
 
     #DAC 1 set

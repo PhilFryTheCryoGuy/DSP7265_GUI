@@ -21,11 +21,13 @@ global curve, ptr
 #data taking subroutine
 def take_data(y,z,ampl,sw_item,dbt,cols,dat_array,a,b,var,sensmod):
     dsp7265.write(sw_item+str(ampl))
-    time.sleep(0.1)            
+    time.sleep(0.1)    
+    print(dbt)        
     mag = dsp7265.query(dbt)
     time.sleep(0.1)
     #split apart and store recorded data
     data = mag.split('\r\n')
+    print(mag)
     dat_array[z][0] = ampl
 
     for x in range(1,cols-1):
@@ -75,8 +77,11 @@ def sr_sweep(sweep_max,sweep_min,steps,sweep_item,dtbt,dtbt_num,xvar,yvar,sensmo
         total_steps = steps*2+1 
     else:
         total_steps = steps+2
-        
+    print(total_steps) 
+    print(xvar)
+
     cols=dtbt_num+1
+    print(sensmod)
     data_array = np.zeros([total_steps,cols],float)
     x = np.zeros(total_steps,float)
     y = np.zeros(total_steps,float)
