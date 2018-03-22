@@ -18,20 +18,28 @@ import pyqtgraph as pg;
 
 global curve, ptr
 
+
+
 #data taking subroutine
 def take_data(y,z,ampl,sw_item,dbt,cols,dat_array,a,b,var,sensmod):
-    dsp7265.write(sw_item+str(ampl))
-    time.sleep(0.1)    
-    print(dbt)        
-    mag = dsp7265.query(dbt)
-    time.sleep(0.1)
+    dsp_write = sw_item+str(int(ampl))
+
+    t2 = threading.Thread(target =  dsp7265.write(dsp_write)) 
+    t2.start()            
+    t2.join() 
+    time.sleep(0.25)    
+    dat = np.zeros(len(dbt))
+
+    for x in range(0,len(dbt)):
+        dat[x] = dsp7265.query(dbt[x])
+
+    time.sleep(0.25)
     #split apart and store recorded data
-    data = mag.split('\r\n')
-    print(mag)
+
     dat_array[z][0] = ampl
 
     for x in range(1,cols-1):
-        dat_array[z][x] = int(data[x-1])      
+        dat_array[z][x] = int(dat[x-1])      
     a[z] = ampl
     b[z] = dat_array[z][var]*sensmod  
     time.sleep(0.002)            
@@ -40,12 +48,13 @@ def take_data(y,z,ampl,sw_item,dbt,cols,dat_array,a,b,var,sensmod):
 def take_data_time(y,z,d_step,dbt,cols,dat_array,a,b,var,sensmod):            
 
     time.sleep(d_step)
-    mag = dsp7265.query(dbt)
-    #split apart and store recorded data
-    data = mag.split('\r\n')
+    dat = np.zeros(len(dbt))
+    for x in range(0,len(dbt)):
+        dat[x] = dsp7265.query(dbt[x])
+
     dat_array[z][0] = time.time()
     for x in range(1,cols-1):
-        dat_array[z][x] = int(data[x-1])      
+        dat_array[z][x] = int(dat[x-1])      
     a[z] = dat_array[z][0]
     b[z] = dat_array[z][var]*sensmod  
     time.sleep(0.002)            
@@ -87,7 +96,8 @@ def sr_sweep(sweep_max,sweep_min,steps,sweep_item,dtbt,dtbt_num,xvar,yvar,sensmo
     y = np.zeros(total_steps,float)
     i=0
     j=i
-    amp = sweep_min
+    amp = int(sweep_min)
+    
 #    col_headings = dtbt.split(';')
 #    print(col_headings)
 #    for l in range(0,dtbt_num+1):

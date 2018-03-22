@@ -518,67 +518,67 @@ class main(QWidget):
     
     def sweepON(self,pressed):
        if pressed:
-           measure_value = ''
+           measure_value = []
            sweep_value = ''
            dtbt_cols = 0
            y_plot_var = 0
            if self.cb.isChecked():
-               measure_value = measure_value + 'X '
+               measure_value.append('X ')
                dtbt_cols=dtbt_cols+1
                if self.yplot.currentIndex() == 0:
                    y_plot_var = dtbt_cols
            if self.cb2.isChecked():
-               measure_value = measure_value + ';Y '
+               measure_value.append('Y ')
                dtbt_cols=dtbt_cols+1
            if self.cb3.isChecked():
-               measure_value = measure_value + ';MAG '
+               measure_value.append('MAG ')
                dtbt_cols=dtbt_cols+1
                if self.yplot.currentIndex() == 1:
                    y_plot_var = dtbt_cols
            if self.cb4.isChecked():
-               measure_value = measure_value + ';PHA '
+               measure_value.append('PHA ')
                dtbt_cols=dtbt_cols+1
                if self.yplot.currentIndex() == 2:
                    y_plot_var = dtbt_cols
                    
            if self.cb5.isChecked():
-               measure_value = measure_value + ';SEN '
+               measure_value.append('SEN ')
                dtbt_cols=dtbt_cols+1
                
            if self.cb6.isChecked():
-               measure_value = measure_value + ';ADC1 '
+               measure_value.append('ADC1 ')
                dtbt_cols=dtbt_cols+1               
                if self.yplot.currentIndex() == 3:
                    y_plot_var = dtbt_cols  
                    
            if self.cb7.isChecked():
-               measure_value = measure_value + ';ADC2 '
+               measure_value.append('ADC2 ')
                dtbt_cols=dtbt_cols+1
                if self.yplot.currentIndex() == 4:
                    y_plot_var = dtbt_cols               
            if self.cb8.isChecked():
-               measure_value = measure_value + ';ADC3 '
+               measure_value.append('ADC3 ')
                dtbt_cols=dtbt_cols+1
            if self.cb9.isChecked():
-               measure_value = measure_value + ';DAC1 '
+               measure_value.append('DAC1 ')
                dtbt_cols=dtbt_cols+1
            if self.cb10.isChecked():
-               measure_value = measure_value + ';DAC2 '
+               measure_value.append('DAC2 ')
                dtbt_cols=dtbt_cols+1
            if self.cb11.isChecked():
-               measure_value = measure_value + ';NN '
+               measure_value.append('NN ')
                dtbt_cols=dtbt_cols+1
            if self.cb12.isChecked():
-               measure_value = measure_value + ';RT '
+               measure_value.append('RT ')
                dtbt_cols=dtbt_cols+1
            if self.cb13.isChecked():
-               measure_value = measure_value + ';LR '
+               measure_value.append('LR ')
                dtbt_cols=dtbt_cols+1
            if self.cb14.isChecked():
-               measure_value = measure_value + ';ENBW '
+               measure_value.append('ENBW ')
                dtbt_cols=dtbt_cols+1
            if self.cb15.isChecked():
-               measure_value = measure_value + ';FRQ '
+               measure_value.append('FRQ ')
                dtbt_cols=dtbt_cols+1
            print(measure_value)
            
